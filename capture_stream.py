@@ -4,6 +4,9 @@ import queue
 
 
 class Capture:
+    """
+        A class to manage the captured video stream in a separate thread
+    """
     def __init__(self, src=0):
         try:
             self.cap = cv2.VideoCapture(src)  # initialise empty VideoCapture class
@@ -14,11 +17,15 @@ class Capture:
             exit(1)
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         self.q = queue.Queue()
+        # initialize a separate thread for reading the next frame
         self.t = threading.Thread(target=self._reader)
         self.t.daemon = True
         self.t.start()
 
     def _reader(self):
+        """
+            Thread for reading the capture frame values
+        """
         try:
             while True:
                 ret, frame = self.cap.read()
@@ -35,10 +42,18 @@ class Capture:
             exit(1)
 
     def read(self):
+        """
+            Wrapper function for the camera thread
+            Returns:
+                Tuple(Bool, np.ndarray): a flag to verify frame availability, and the actual frame, (False, None) if no frame is returned.
+        """
         frame = self.q.get()
         if frame is not None:
             return True, frame
         return False, None
 
     def release(self):
+        """
+            Release capture resources
+        """
         self.cap.release()

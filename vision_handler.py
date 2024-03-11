@@ -1,11 +1,14 @@
-# import openai.types.create_embedding_response
-import cv2  # We're using OpenCV to read video, to install !pip install opencv-python
+import cv2
+from openai import OpenAI
+
 import threading
 import base64
-from openai import OpenAI
 
 
 class VisionServer:
+    """
+        A class to establish communication with OpenAI's API and provide respone values
+    """
     def __init__(self, stream=False):
         self.client = OpenAI(api_key="OpenAI-Key")  # GPT API
         self.model = "gpt-4-vision-preview"
@@ -20,7 +23,6 @@ class VisionServer:
                             4- Your answer should always include the TRUE if hand is holding an object, or FALSE if not holding an object\n \
                             5- Your answer should always include the mass in grams, or '0' if no object can be found\n \
                             6- Your answer should always include the name or category of the object being held.\n \
-                            7- There are ONLY 5 types of answers, a Drill, a Hammer, a Staple gun, Pliers, and No object if you cannot find a hand\n \
                             YOU ARE ONLY ALLOWED TO RESPOND IN THE FOLLOWING FORMAT 'Holding: <TRUE or FALSE>, Object: <object_name>, Weight: <object_estimated_weight>', and the MAXIMUM object_estimated_weight is '3000 grams.'\n \
                             Here are multiple examples for different situations:\n \
                             example 1 (person holding a Hammer in his right hand):\n \
@@ -40,7 +42,12 @@ class VisionServer:
                             Assistant: Holding: TRUE, Object: Pliers, Weight: 170 grams"
 
     def analyze(self, image, prompt):
-
+        """
+            A function to encode and send the image and corresponding prompt to the API
+            Input:
+                image(np.ndarray): the captured image from openCV caputre stream
+                prompt(string): the system prompt comprised of main system prompt, few-shot, and tool dataset.
+        """
         _, buffer = cv2.imencode(".jpeg", image)
         base64_image = base64.b64encode(buffer).decode("utf-8")
 
@@ -77,7 +84,12 @@ class VisionServer:
         self.state = True
 
     def update(self, image, prompt):
-
+        """
+            A wrapper over the analyze function to initialize every api call in a separate thread
+            Input:
+                image(np.ndarray): the captured image from openCV caputre stream
+                prompt(string): the system prompt comprised of main system prompt, few-shot, and tool dataset.
+        """
         if self.state == True:
             t = threading.Thread(target=self.analyze, args=(image, prompt), daemon=True)
             t.start()
